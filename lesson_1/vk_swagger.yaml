@@ -1,0 +1,525 @@
+openapi: 3.1.0
+
+info:
+  title: Social Network API
+  version: 1.0.0
+  description: >
+    API социальной сети: друзья, анкеты пользователей,
+    посты, лента, диалоги и сообщения.
+
+servers:
+  - url: https://api.example.com
+
+tags:
+  - name: Друзья
+    description: Добавление, удаление и просмотр друзей
+  - name: Заявки в друзья
+    description: Управление заявками в друзья
+  - name: Профиль
+    description: Просмотр анкеты пользователя
+  - name: Посты
+    description: Публикация постов и медиа
+  - name: Лента
+    description: Домашняя и пользовательская лента
+  - name: Чаты
+    description: Диалоги и групповые чаты
+  - name: Сообщения
+    description: Отправка и чтение сообщений
+
+paths:
+
+  /user/{sender_id}/friend-request/{recipient_id}:
+    post:
+      tags: [Заявки в друзья]
+      summary: Создать заявку в друзья
+      description: Отправить заявку в друзья другому пользователю
+      parameters:
+        - $ref: '#/components/parameters/SenderId'
+        - $ref: '#/components/parameters/RecipientId'
+      responses:
+        '201':
+          description: Заявка успешно создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendRequest'
+
+    delete:
+      tags: [Заявки в друзья]
+      summary: Отменить заявку в друзья
+      description: Отменить ранее отправленную, но не принятую заявку
+      parameters:
+        - $ref: '#/components/parameters/SenderId'
+        - $ref: '#/components/parameters/RecipientId'
+      responses:
+        '200':
+          description: Заявка отменена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendRequestCanceled'
+
+  /user/{recipient_id}/friend-request/{sender_id}/accept:
+    post:
+      tags: [Заявки в друзья]
+      summary: Принять заявку в друзья
+      description: Принять входящую заявку в друзья
+      parameters:
+        - $ref: '#/components/parameters/RecipientId'
+        - $ref: '#/components/parameters/SenderId'
+      responses:
+        '200':
+          description: Пользователи стали друзьями
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendAccepted'
+
+  /user/{recipient_id}/friend-request/{sender_id}/reject:
+    post:
+      tags: [Заявки в друзья]
+      summary: Отклонить заявку в друзья
+      description: Отклонить входящую заявку в друзья
+      parameters:
+        - $ref: '#/components/parameters/RecipientId'
+        - $ref: '#/components/parameters/SenderId'
+      responses:
+        '200':
+          description: Заявка отклонена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendRequestRejected'
+
+  /user/{user_id}/friend-requests/incoming:
+    get:
+      tags: [Заявки в друзья]
+      summary: Входящие заявки в друзья
+      description: Получить список входящих заявок в друзья
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: Список входящих заявок
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FriendRequestIncoming'
+
+  /user/{user_id}/friend-requests/outgoing:
+    get:
+      tags: [Заявки в друзья]
+      summary: Исходящие заявки в друзья
+      description: Получить список отправленных заявок
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: Список исходящих заявок
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FriendRequestOutgoing'
+
+  /user/{user_id}/friends:
+    get:
+      tags: [Друзья]
+      summary: Список друзей
+      description: Получить список друзей пользователя
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: Список друзей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Friend'
+
+  /user/{user_id}/friends/{target_id}:
+    delete:
+      tags: [Друзья]
+      summary: Удалить друга
+      description: Удалить пользователя из списка друзей
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/TargetId'
+      responses:
+        '200':
+          description: Друг удалён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendRemoved'
+
+  /user/{target_id}/profile:
+    get:
+      tags: [Профиль]
+      summary: Просмотр анкеты пользователя
+      description: Получить публичную анкету пользователя
+      parameters:
+        - $ref: '#/components/parameters/TargetId'
+      responses:
+        '200':
+          description: Анкета пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+  /user/{user_id}/posts:
+    post:
+      tags: [Посты]
+      summary: Публикация поста
+      description: Создать новый пост в ленте пользователя
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCreate'
+      responses:
+        '200':
+          description: Пост опубликован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+
+  /feed:
+    get:
+      tags: [Лента]
+      summary: Домашняя лента
+      description: Получить домашнюю ленту пользователя
+      responses:
+        '200':
+          description: Домашняя лента
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feed'
+
+  /user/{user_id}/feed:
+    get:
+      tags: [Лента]
+      summary: Лента пользователя
+      description: Получить ленту конкретного пользователя
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: Лента пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserFeed'
+
+  /chats:
+    get:
+      tags: [Чаты]
+      summary: Список чатов
+      description: Получить список диалогов и групповых чатов
+      responses:
+        '200':
+          description: Список чатов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Chat'
+
+  /chats/{chat_id}/messages:
+    post:
+      tags: [Сообщения]
+      summary: Отправка сообщения
+      description: Отправить сообщение в диалог или групповой чат
+      parameters:
+        - $ref: '#/components/parameters/ChatId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageCreate'
+      responses:
+        '200':
+          description: Сообщение отправлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+    get:
+      tags: [Сообщения]
+      summary: История сообщений
+      description: Получить историю сообщений чата
+      parameters:
+        - $ref: '#/components/parameters/ChatId'
+        - name: limit
+          in: query
+          description: Количество сообщений
+          schema:
+            type: integer
+            default: 50
+        - name: from_message_id
+          in: query
+          description: Сообщения, начиная с указанного ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: История сообщений
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatMessages'
+
+  /chats/{chat_id}/read:
+    post:
+      tags: [Сообщения]
+      summary: Прочитать сообщения
+      description: Отметить сообщения как прочитанные
+      parameters:
+        - $ref: '#/components/parameters/ChatId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReadMessages'
+      responses:
+        '200':
+          description: Сообщения отмечены как прочитанные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadStatus'
+components:
+
+  parameters:
+    UserId:
+      name: user_id
+      in: path
+      required: true
+      schema:
+        type: integer
+
+    SenderId:
+      name: sender_id
+      in: path
+      required: true
+      schema:
+        type: integer
+
+    RecipientId:
+      name: recipient_id
+      in: path
+      required: true
+      schema:
+        type: integer
+
+    TargetId:
+      name: target_id
+      in: path
+      required: true
+      schema:
+        type: integer
+
+    ChatId:
+      name: chat_id
+      in: path
+      required: true
+      schema:
+        type: integer
+
+  schemas:
+
+    Timestamp:
+      type: string
+      format: date-time
+
+    FriendRequest:
+      type: object
+      properties:
+        sender_id: { type: integer }
+        recipient_id: { type: integer }
+        status: { type: string }
+        created_at: { $ref: '#/components/schemas/Timestamp' }
+
+    FriendRequestCanceled:
+      type: object
+      properties:
+        sender_id: { type: integer }
+        recipient_id: { type: integer }
+        status: { type: string }
+
+    FriendAccepted:
+      type: object
+      properties:
+        user_id: { type: integer }
+        friend_id: { type: integer }
+        status: { type: string }
+        friends_since: { $ref: '#/components/schemas/Timestamp' }
+
+    FriendRequestRejected:
+      type: object
+      properties:
+        sender_id: { type: integer }
+        recipient_id: { type: integer }
+        status: { type: string }
+
+    FriendRequestIncoming:
+      type: object
+      properties:
+        sender_id: { type: integer }
+        username: { type: string }
+        created_at: { $ref: '#/components/schemas/Timestamp' }
+
+    FriendRequestOutgoing:
+      type: object
+      properties:
+        recipient_id: { type: integer }
+        username: { type: string }
+        created_at: { $ref: '#/components/schemas/Timestamp' }
+
+    FriendRemoved:
+      type: object
+      properties:
+        user_id: { type: integer }
+        removed_friend_id: { type: integer }
+
+    Friend:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        friends_since: { $ref: '#/components/schemas/Timestamp' }
+
+    UserProfile:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        avatar_url: { type: string }
+        status: { type: string }
+        about: { type: string }
+        city: { type: string }
+        age: { type: integer }
+        friends_count: { type: integer }
+        is_friend: { type: boolean }
+        friend_status: { type: string }
+        created_at: { $ref: '#/components/schemas/Timestamp' }
+
+    Media:
+      type: object
+      properties:
+        type: { type: string }
+        url: { type: string }
+
+    PostCreate:
+      type: object
+      properties:
+        text: { type: string }
+        media:
+          type: array
+          items: { $ref: '#/components/schemas/Media' }
+
+    Post:
+      type: object
+      properties:
+        post_id: { type: integer }
+        author_id: { type: integer }
+        text: { type: string }
+        media:
+          type: array
+          items: { $ref: '#/components/schemas/Media' }
+        likes_count: { type: integer }
+        comments_count: { type: integer }
+        created_at: { $ref: '#/components/schemas/Timestamp' }
+
+    Feed:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Post' }
+        next_cursor:
+          type: string
+          nullable: true
+
+    UserFeed:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            id: { type: integer }
+            username: { type: string }
+            avatar_url: { type: string }
+            is_friend: { type: boolean }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Post' }
+        next_cursor:
+          type: string
+          nullable: true
+
+    Chat:
+      type: object
+      properties:
+        chat_id: { type: integer }
+        type: { type: string }
+        title: { type: string, nullable: true }
+        avatar_url: { type: string }
+        unread_count: { type: integer }
+
+    MessageCreate:
+      type: object
+      properties:
+        text: { type: string }
+        media:
+          type: array
+          items: { $ref: '#/components/schemas/Media' }
+
+    Message:
+      type: object
+      properties:
+        message_id: { type: integer }
+        chat_id: { type: integer }
+        sender_id: { type: integer }
+        text: { type: string }
+        attachments:
+          type: array
+          items: { $ref: '#/components/schemas/Media' }
+        created_at: { $ref: '#/components/schemas/Timestamp' }
+
+    ChatMessages:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Message' }
+        next_cursor:
+          type: string
+          nullable: true
+
+    ReadMessages:
+      type: object
+      properties:
+        last_read_message_id: { type: integer }
+
+    ReadStatus:
+      type: object
+      properties:
+        chat_id: { type: integer }
+        last_read_message_id: { type: integer }
+        status: { type: string }
