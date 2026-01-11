@@ -1,0 +1,18 @@
+Table users {
+  id bigint [pk, increment]
+  first_name varchar
+  last_name varchar
+  description text
+  city varchar
+  created_at timestamp
+}
+
+Table interests {
+  id bigint [pk, increment]
+  name varchar [unique]
+}
+
+Table user_interests {
+  user_id bigint [ref: > users.id]
+  interest_id bigint [ref: > interests.id]
+}
